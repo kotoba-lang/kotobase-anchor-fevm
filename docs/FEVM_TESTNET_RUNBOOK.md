@@ -36,6 +36,9 @@ encryption, maintenance, physical-index, testnet tenant, or production keys:
 
 Keep them in the approved secret manager. Temporary env/secrets files must be
 mode `0600` and removed after use. Only public addresses enter evidence.
+On macOS, `npm run credentials:calibration` provisions all three into Keychain;
+the `*:keychain` commands inject them directly into child processes without
+printing them or placing them in shell history.
 
 ## Deploy contract
 
