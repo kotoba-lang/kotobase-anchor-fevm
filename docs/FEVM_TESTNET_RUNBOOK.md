@@ -82,6 +82,10 @@ Required retained evidence:
    digest and idempotency values;
 7. raw evidence SHA-256 and protected storage location.
 
+`npm run qualify:reorg` performs the local Anvil snapshot/revert drill and
+emits a SHA-256-bound protected journal. It must pass before live Calibration
+qualification; it complements rather than replaces live finality evidence.
+
 Calibration finality is evidence for the testnet interpreter only. It does not
 authorize a production contract or establish an economic finality policy.
 

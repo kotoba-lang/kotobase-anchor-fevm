@@ -9,6 +9,7 @@
     "credentials:calibration": "node scripts/provision-calibration-credentials.mjs",
     "deploy:calibration": "node scripts/deploy-calibration.mjs",
     "deploy:calibration:keychain": "node scripts/run-calibration-with-keychain.mjs deploy",
+    "qualify:reorg": "node scripts/qualify-local-reorg.mjs",
     "qualify:calibration": "node scripts/qualify-calibration.mjs",
     "qualify:calibration:keychain": "node scripts/run-calibration-with-keychain.mjs qualify"
   },
