@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import {execFileSync} from "node:child_process";
-import {CALIBRATION, calibrationInterpreterFromEnv} from "../runtime/rpc-interpreter.mjs";
+import {evmInterpreterFromEnv} from "../runtime/evm-interpreter.mjs";
+import {FILECOIN_CALIBRATION as CALIBRATION} from "../profiles/filecoin-calibration.mjs";
 import {DurableAnchorJournal} from "../runtime/journal-store.mjs";
 
-const interpreter = await calibrationInterpreterFromEnv();
+const interpreter = await evmInterpreterFromEnv(CALIBRATION);
 const journalPath = process.env.FEVM_EVIDENCE_JOURNAL;
 if (!journalPath) throw new Error("FEVM_EVIDENCE_JOURNAL is required");
 if (fs.existsSync(journalPath) && fs.statSync(journalPath).size !== 0)

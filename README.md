@@ -1,34 +1,31 @@
-# kotobase-anchor-fevm
+# kotobase-checkpoint-anchor-runtime
 
-Asynchronous FEVM anchoring adapter for Kotobase logical checkpoints.
+Asynchronous, chain-neutral checkpoint receipts for Kotobase.
 
-This is deliberately not an `IEngine`, block provider, mutable database head or
-query path. Its local effect carries the versioned logical checkpoint input;
-the RPC interpreter converts that input into an opaque, salted commitment.
-Neither the logical input nor the engine's provider-specific physical root is
-put on chain.
+The default capability is a signed append-only transparency log. It requires
+no Filecoin account, blockchain, gas token, RPC service, IPFS, or physical
+storage format. Receipts contain only salted opaque commitment values, a hash
+chain and an Ed25519 signature. Database IDs, epochs, logical/physical roots,
+graph CIDs and datoms do not cross the disclosure boundary.
 
-`contracts/src/KotobaseCheckpointAnchor.sol` is the testnet contract. It stores
-only a salted opaque idempotency key and salted opaque checkpoint digest.
-Database IDs, epochs, logical roots, physical roots and tenant data do
-not cross the RPC boundary. Identical retries are no-ops; conflicting retries
-revert.
+`kotobase.anchor.checkpoint` owns the portable submission plan.
+`runtime/checkpoint-material.mjs` owns private commitment derivation.
+`runtime/transparency-anchor.mjs` is the standard chainless implementation.
+`runtime/journal-store.mjs` supplies the fsync-backed durable CAS/receipt log.
 
-`kotobase.anchor.fevm.queue` adds the host-neutral durable coordinator. It
-returns put-if-absent and compare-and-set persistence effects, leases due work,
-rejects stale workers, applies only ordered lifecycle evidence, polls receipts,
-and bounds retry with exponential backoff. A host must persist a claim CAS
-before executing its network effect. The coordinator performs no I/O and is
-never imported by the synchronous graph transaction path.
+Public-chain notarization is optional. `runtime/evm-interpreter.mjs` implements
+standard EVM JSON-RPC, gas bounds, confirmations and block-hash reorg handling.
+`profiles/filecoin-calibration.mjs` is one replaceable network profile; it is
+not imported by the chainless path. The Solidity contract uses no Filecoin
+precompile or PieceCID and can deploy on any compatible EVM.
 
-`runtime/rpc-interpreter.mjs` is the effect interpreter for Filecoin
-Calibration (chain ID `314159`). It checks gas before submission, records the
-first receipt's block hash, waits for a configured confirmation floor, and
-reports a reorg if the receipt disappears or moves to another block.
-`runtime/journal-store.mjs` is a mode-`0600`, fsync-backed, SHA-256-framed
-single-writer durable queue/receipt journal. It rejects revision-CAS conflicts
-and fails closed on replay tampering. A horizontally scaled deployment must
-replace it with a transactional CAS provider while retaining the same effects.
+The historical `kotobase.anchor.fevm` namespace and
+`runtime/rpc-interpreter.mjs` remain compatibility facades. Neither default nor
+optional runtime dependencies resolve `cloud-filecoin`.
+
+No anchor is an `IEngine`, graph head, transaction acknowledgement, block
+provider, or query dependency. Losing every anchor backend must not make the
+graph database unavailable.
 
 ```sh
 clojure -M:test
@@ -37,8 +34,9 @@ npm ci
 npm run test:cljs
 npm run test:runtime
 npm run test:contract
+npm run qualify:transparency
 ```
 
-Deployment and evidence procedures are in
-[`docs/FEVM_TESTNET_RUNBOOK.md`](docs/FEVM_TESTNET_RUNBOOK.md). No production
-address or synchronous graph-backend dependency is defined here.
+See [`docs/CHECKPOINT_ANCHOR_RUNBOOK.md`](docs/CHECKPOINT_ANCHOR_RUNBOOK.md).
+Filecoin Calibration remains an optional profile documented in
+[`docs/FEVM_TESTNET_RUNBOOK.md`](docs/FEVM_TESTNET_RUNBOOK.md).

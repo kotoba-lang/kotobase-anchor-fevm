@@ -1,7 +1,6 @@
 (ns kotobase.anchor.fevm
   "Pure plans and lifecycle evidence for FEVM checkpoint anchoring."
   (:require [clojure.string :as str]
-            [filecoin.cloud.evm :as evm]
             [kotobase.engine.archive :as lifecycle]
             [kotobase.engine.canonical :as canonical]))
 
@@ -42,14 +41,17 @@
               :payload payload}}))
 
 (defn call-message
-  "Turn a submission effect into a native Filecoin InvokeEVM message. The
-  contract-specific ABI encoder is injected; no undeployed ABI is invented."
+  "Compatibility descriptor for the former Filecoin-native message boundary.
+  Core no longer constructs Filecoin messages. An optional profile interprets
+  this ordinary EVM call without putting cloud-filecoin on the default path."
   [{:keys [effect/type contract-address payload] :as effect}
    encode-calldata-fn message-options]
   (when-not (and (= :fevm/submit-checkpoint type) (ifn? encode-calldata-fn))
     (throw (ex-info "invalid FEVM checkpoint effect"
                     {:type :kotobase.anchor/invalid-effect :effect effect})))
-  (evm/invoke contract-address (encode-calldata-fn payload) message-options))
+  {:to contract-address
+   :data (encode-calldata-fn payload)
+   :options message-options})
 
 (defn mark-submitted [state {:keys [tx-hash] :as evidence}]
   (when-not (and (string? tx-hash) (not (str/blank? tx-hash)))

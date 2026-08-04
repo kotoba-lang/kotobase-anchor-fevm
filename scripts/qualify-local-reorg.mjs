@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import {ContractFactory, JsonRpcProvider, Wallet} from "ethers";
 import {DurableAnchorJournal} from "../runtime/journal-store.mjs";
-import {FevmRpcInterpreter} from "../runtime/rpc-interpreter.mjs";
+import {EvmRpcInterpreter} from "../runtime/evm-interpreter.mjs";
 
 const ANVIL_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const revision = execFileSync("git", ["rev-parse", "HEAD"], {encoding: "utf8"}).trim();
@@ -44,7 +44,7 @@ try {
   await contract.waitForDeployment();
   const snapshot = await rpc("evm_snapshot");
   const salt = `0x${crypto.randomBytes(32).toString("hex")}`;
-  const interpreter = new FevmRpcInterpreter({provider, signer,
+  const interpreter = new EvmRpcInterpreter({provider, signer,
     contractAddress: await contract.getAddress(), disclosureSalt: salt, minConfirmations: 3});
   const effect = {"effect/type": "fevm/submit-checkpoint", idempotency_key: "reorg-drill",
     payload: {"payload/version": 1, "database-id": "private/reorg-drill", epoch: 1,

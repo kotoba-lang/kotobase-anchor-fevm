@@ -2,7 +2,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {ContractFactory, JsonRpcProvider, Wallet, keccak256} from "ethers";
-import {CALIBRATION} from "../runtime/rpc-interpreter.mjs";
+import {FILECOIN_CALIBRATION as CALIBRATION} from "../profiles/filecoin-calibration.mjs";
 
 function required(name) {
   const value = process.env[name];
