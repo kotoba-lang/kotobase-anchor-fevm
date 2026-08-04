@@ -36,6 +36,23 @@ test("submission enforces gas budget and emits only the transaction hash", async
   assert.equal(submitted[2].gasLimit, 120_000n);
 });
 
+test("submission reads pending nonce directly after a reorg", async () => {
+  let options;
+  const fakeContract = {anchor: Object.assign(async (...args) => {
+    options = args[2]; return {hash: txHash};
+  }, {estimateGas: async () => 100_000n})};
+  const provider = {send: async (method, params) => {
+    assert.equal(method, "eth_getTransactionCount");
+    assert.deepEqual(params, [`0x${"77".repeat(20)}`, "pending"]);
+    return "0x2";
+  }};
+  const interpreter = new FevmRpcInterpreter({provider,
+    signer: {address: `0x${"77".repeat(20)}`}, contractAddress: contract,
+    disclosureSalt: saltA, contractFactory: () => fakeContract});
+  await interpreter.interpret(submitEffect);
+  assert.equal(options.nonce, 2);
+});
+
 test("receipt polling records block identity, finality and reorg", async () => {
   let receipt = {status: 1, blockNumber: 100, blockHash: blockA};
   let head = 102;

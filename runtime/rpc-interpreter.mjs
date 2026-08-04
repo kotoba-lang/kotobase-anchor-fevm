@@ -70,8 +70,16 @@ export class FevmRpcInterpreter {
     const estimate = await contract.anchor.estimateGas(material.idempotencyKey,
       material.checkpointDigest);
     if (estimate > this.maxGas) return {"result/type": "failed", reason: "gas-budget-exceeded"};
+    const options = {gasLimit: estimate * 12n / 10n};
+    // JSON-RPC providers may cache transaction counts across a reorg. Read the
+    // pending nonce directly so an idempotent replacement uses canonical chain
+    // state instead of a stale provider cache.
+    if (this.signer.address && typeof this.provider.send === "function") {
+      const pending = await this.provider.send("eth_getTransactionCount", [this.signer.address, "pending"]);
+      options.nonce = Number(BigInt(pending));
+    }
     const transaction = await contract.anchor(material.idempotencyKey,
-      material.checkpointDigest, {gasLimit: estimate * 12n / 10n});
+      material.checkpointDigest, options);
     return {"result/type": "submitted", "tx-hash": transaction.hash};
   }
 
