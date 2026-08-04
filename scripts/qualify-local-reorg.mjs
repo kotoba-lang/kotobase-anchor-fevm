@@ -73,7 +73,7 @@ try {
     throw new Error(`replacement receipt did not finalize: ${JSON.stringify({reincluded, finalized,
       head: await provider.getBlockNumber()})}`);
 
-  const evidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), "kotobase-fevm-reorg-"));
+  const evidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), "kotobase-evm-reorg-"));
   fs.chmodSync(evidenceDir, 0o700);
   const journalPath = path.join(evidenceDir, "reorg.jsonl");
   const journal = new DurableAnchorJournal(journalPath);
@@ -83,7 +83,7 @@ try {
     block_hash: reincluded["block-hash"], confirmations: finalized.confirmations});
   journal.close();
   const rawSha256 = crypto.createHash("sha256").update(fs.readFileSync(journalPath)).digest("hex");
-  console.log(JSON.stringify({schema: "kotobase.fevm-local-reorg-evidence.v1",
+  console.log(JSON.stringify({schema: "kotobase.evm-local-reorg-evidence.v1",
     source_revision: revision,
     original_transaction: first["tx-hash"], replacement_transaction: second["tx-hash"],
     original_block_hash: included["block-hash"], replacement_block_hash: reincluded["block-hash"],
