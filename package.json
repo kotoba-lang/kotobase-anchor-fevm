@@ -6,8 +6,11 @@
     "test:runtime": "node --test runtime/test/*.test.mjs",
     "test:contract": "forge test",
     "build:contract": "forge build",
+    "credentials:calibration": "node scripts/provision-calibration-credentials.mjs",
     "deploy:calibration": "node scripts/deploy-calibration.mjs",
-    "qualify:calibration": "node scripts/qualify-calibration.mjs"
+    "deploy:calibration:keychain": "node scripts/run-calibration-with-keychain.mjs deploy",
+    "qualify:calibration": "node scripts/qualify-calibration.mjs",
+    "qualify:calibration:keychain": "node scripts/run-calibration-with-keychain.mjs qualify"
   },
   "dependencies": {
     "@noble/hashes": "2.2.0",
