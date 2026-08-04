@@ -2,10 +2,16 @@
   "name": "kotobase-anchor-fevm",
   "private": true,
   "scripts": {
-    "test:cljs": "nbb --classpath \"$(clojure -Spath)\" test/run.cljs"
+    "test:cljs": "nbb --classpath \"$(clojure -Spath)\" test/run.cljs",
+    "test:runtime": "node --test runtime/test/*.test.mjs",
+    "test:contract": "forge test",
+    "build:contract": "forge build",
+    "deploy:calibration": "node scripts/deploy-calibration.mjs",
+    "qualify:calibration": "node scripts/qualify-calibration.mjs"
   },
   "dependencies": {
-    "@noble/hashes": "2.2.0"
+    "@noble/hashes": "2.2.0",
+    "ethers": "6.17.0"
   },
   "devDependencies": {
     "nbb": "1.5.211"

@@ -57,9 +57,10 @@
                     {:type :kotobase.anchor/missing-transaction-hash})))
   (lifecycle/transition-anchor state :submitted evidence))
 
-(defn mark-confirmed [state {:keys [height] :as evidence}]
-  (when-not (and (integer? height) (not (neg? height)))
-    (throw (ex-info "confirmed anchor requires chain height"
+(defn mark-confirmed [state {:keys [height block-hash] :as evidence}]
+  (when-not (and (integer? height) (not (neg? height))
+                 (string? block-hash) (not (str/blank? block-hash)))
+    (throw (ex-info "confirmed anchor requires chain height and block hash"
                     {:type :kotobase.anchor/missing-height})))
   (lifecycle/transition-anchor state :confirmed evidence))
 
@@ -73,5 +74,7 @@
   (lifecycle/transition-anchor state :failed evidence))
 
 (defn retry [state]
-  (lifecycle/transition-anchor state :pending {}))
-
+  ;; A reorg retry must not carry the orphaned receipt identity into the next
+  ;; poll. The idempotency key lives on the durable job, not in this evidence.
+  (-> (lifecycle/transition-anchor state :pending {})
+      (dissoc :tx-hash :height :block-hash :confirmations :reason)))

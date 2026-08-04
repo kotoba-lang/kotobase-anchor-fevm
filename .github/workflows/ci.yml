@@ -36,3 +36,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:cljs
+      - run: npm run test:runtime
+  test-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test

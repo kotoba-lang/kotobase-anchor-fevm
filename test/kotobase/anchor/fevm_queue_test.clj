@@ -65,12 +65,14 @@
         confirm-claim (queue/claim submitted "poller-1" 15000 {})
         receipt-effect (queue/work-effect confirm-claim "poller-1" 15000)
         confirmed (queue/apply-result confirm-claim "poller-1" 15000
-                                      {:result/type :confirmed :height 1234} {})
+                                      {:result/type :confirmed :height 1234
+                                       :block-hash "block-a"} {})
         final-claim (queue/claim confirmed "poller-2" 30000 {})
         finalized (queue/apply-result final-claim "poller-2" 30000
                                       {:result/type :finalized :confirmations 900} {})]
     (is (= :fevm/read-receipt (:effect/type receipt-effect)))
     (is (= "tx-1" (:transaction-hash receipt-effect)))
+    (is (nil? (:expected-block-hash receipt-effect)))
     (is (= :finalized (get-in finalized [:anchor-state :status])))
     (is (= 900 (get-in finalized [:anchor-state :confirmations])))
     (is (nil? (:next-at-ms finalized)))
@@ -91,6 +93,29 @@
                                             {:result/type :submitted
                                              :tx-hash "tx-1"
                                              :token "must-not-be-ignored"} {}))))))
+
+(deftest reorg-evidence-retries-the-idempotent-submission
+  (let [record (queue/new-job checkpoint config 0)
+        submit-claim (queue/claim record "submitter" 0 {})
+        submitted (queue/apply-result submit-claim "submitter" 0
+                                      {:result/type :submitted :tx-hash "tx-1"} {})
+        receipt-claim (queue/claim submitted "poller" 15000 {})
+        confirmed (queue/apply-result receipt-claim "poller" 15000
+                                      {:result/type :confirmed :height 10
+                                       :block-hash "block-a"} {})
+        reorg-claim (queue/claim confirmed "poller" 30000 {})
+        reorged (queue/apply-result reorg-claim "poller" 30000
+                                    {:result/type :reorged} {})]
+    (is (= :failed (get-in reorged [:anchor-state :status])))
+    (is (= :chain-reorg (get-in reorged [:anchor-state :reason])))
+    (is (= (:idempotency-key record) (:idempotency-key reorged)))
+    (let [due (:next-at-ms reorged)
+          retry-claim (queue/claim reorged "submitter-2" due {})]
+      (is (= :pending (get-in retry-claim [:anchor-state :status])))
+      (is (nil? (get-in retry-claim [:anchor-state :block-hash])))
+      (is (nil? (get-in retry-claim [:anchor-state :tx-hash])))
+      (is (= :fevm/submit-checkpoint
+             (:effect/type (queue/work-effect retry-claim "submitter-2" due)))))))
 
 (deftest retry-is-bounded-and-keeps-idempotency
   (let [policy {:lease-ms 10 :poll-ms 10 :retry-base-ms 5

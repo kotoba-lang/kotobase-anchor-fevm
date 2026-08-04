@@ -28,7 +28,7 @@
   #{:payload/version :database-id :epoch :logical-checkpoint-root :piece-cid})
 (def ^:private state-keys
   (into payload-keys
-        [:anchor-provider :status :tx-hash :height :confirmations :reason]))
+        [:anchor-provider :status :tx-hash :height :block-hash :confirmations :reason]))
 
 (defn- fail [message type data]
   (throw (ex-info message (assoc data :type type))))
@@ -78,9 +78,11 @@
     :pending true
     :submitted (bounded-identifier? (:tx-hash state))
     :confirmed (and (bounded-identifier? (:tx-hash state))
-                    (nonnegative-integer? (:height state)))
+                    (nonnegative-integer? (:height state))
+                    (bounded-identifier? (:block-hash state)))
     :finalized (and (bounded-identifier? (:tx-hash state))
                     (nonnegative-integer? (:height state))
+                    (bounded-identifier? (:block-hash state))
                     (positive-integer? (:confirmations state)))
     :failed (or (keyword? (:reason state))
                 (bounded-identifier? (:reason state)))
@@ -221,6 +223,7 @@
       {:effect/type :fevm/read-receipt
        :chain (get-in job [:submission-effect :chain])
        :transaction-hash (:tx-hash state)
+       :expected-block-hash (:block-hash state)
        :idempotency-key (:idempotency-key job)}
 
       :else
@@ -266,11 +269,12 @@
           :confirmed
           (do
             (when-not (and (= :submitted status)
-                           (exact-result? result #{:result/type :height}))
+                           (exact-result? result #{:result/type :height :block-hash}))
               (fail "confirmed result requires a submitted anchor"
                     :kotobase.anchor/invalid-worker-result
                     {:status status :result result}))
-            [(fevm/mark-confirmed state {:height (:height result)})
+            [(fevm/mark-confirmed state {:height (:height result)
+                                         :block-hash (:block-hash result)})
              (+ now-ms (:poll-ms policy))])
 
           :finalized
@@ -301,6 +305,16 @@
                     :kotobase.anchor/invalid-worker-result
                     {:status status :result result}))
             [(fevm/mark-failed state {:reason (:reason result)})
+             (+ now-ms (retry-delay-ms (:attempt job) policy))])
+
+          :reorged
+          (do
+            (when-not (and (#{:submitted :confirmed} status)
+                           (exact-result? result #{:result/type}))
+              (fail "reorg result requires an on-chain anchor"
+                    :kotobase.anchor/invalid-worker-result
+                    {:status status :result result}))
+            [(fevm/mark-failed state {:reason :chain-reorg})
              (+ now-ms (retry-delay-ms (:attempt job) policy))])
 
           (fail "unknown FEVM worker result"
