@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {FevmRpcInterpreter, privateAnchorMaterial} from "../rpc-interpreter.mjs";
+import {EvmRpcInterpreter, privateAnchorMaterial} from "../evm-interpreter.mjs";
 
 const saltA = `0x${"11".repeat(32)}`;
 const saltB = `0x${"22".repeat(32)}`;
@@ -28,7 +28,7 @@ test("submission enforces gas budget and emits only the transaction hash", async
   const fakeContract = {anchor: Object.assign(async (...args) => {
     submitted = args; return {hash: txHash};
   }, {estimateGas: async () => 100_000n})};
-  const interpreter = new FevmRpcInterpreter({provider: {}, signer: {}, contractAddress: contract,
+  const interpreter = new EvmRpcInterpreter({provider: {}, signer: {}, contractAddress: contract,
     disclosureSalt: saltA, contractFactory: () => fakeContract});
   assert.deepEqual(await interpreter.interpret(submitEffect),
     {"result/type": "submitted", "tx-hash": txHash});
@@ -46,7 +46,7 @@ test("submission reads pending nonce directly after a reorg", async () => {
     assert.deepEqual(params, [`0x${"77".repeat(20)}`, "pending"]);
     return "0x2";
   }};
-  const interpreter = new FevmRpcInterpreter({provider,
+  const interpreter = new EvmRpcInterpreter({provider,
     signer: {address: `0x${"77".repeat(20)}`}, contractAddress: contract,
     disclosureSalt: saltA, contractFactory: () => fakeContract});
   await interpreter.interpret(submitEffect);
@@ -57,7 +57,7 @@ test("receipt polling records block identity, finality and reorg", async () => {
   let receipt = {status: 1, blockNumber: 100, blockHash: blockA};
   let head = 102;
   const provider = {getTransactionReceipt: async () => receipt, getBlockNumber: async () => head};
-  const interpreter = new FevmRpcInterpreter({provider, signer: {}, contractAddress: contract,
+  const interpreter = new EvmRpcInterpreter({provider, signer: {}, contractAddress: contract,
     disclosureSalt: saltA, minConfirmations: 5, contractFactory: () => ({})});
   const base = {"effect/type": "fevm/read-receipt", transaction_hash: txHash};
   assert.deepEqual(await interpreter.interpret(base),

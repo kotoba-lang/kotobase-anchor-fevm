@@ -1,5 +1,5 @@
 {
-  "name": "kotobase-anchor-fevm",
+  "name": "kotobase-checkpoint-anchor-runtime",
   "private": true,
   "scripts": {
     "test:cljs": "nbb --classpath \"$(clojure -Spath)\" test/run.cljs",
@@ -10,6 +10,7 @@
     "deploy:calibration": "node scripts/deploy-calibration.mjs",
     "deploy:calibration:keychain": "node scripts/run-calibration-with-keychain.mjs deploy",
     "qualify:reorg": "node scripts/qualify-local-reorg.mjs",
+    "qualify:transparency": "node scripts/qualify-transparency.mjs",
     "qualify:calibration": "node scripts/qualify-calibration.mjs",
     "qualify:calibration:keychain": "node scripts/run-calibration-with-keychain.mjs qualify"
   },

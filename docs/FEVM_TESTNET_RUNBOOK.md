@@ -1,6 +1,8 @@
-# FEVM Calibration deployment and qualification
+# Optional profile: Filecoin Calibration
 
-This track is asynchronous and non-authoritative. Disabling it must not affect
+This is not the standard checkpoint path. The chainless signed transparency
+backend requires no Filecoin dependency. This optional profile is asynchronous
+and non-authoritative. Disabling it must not affect
 graph transactions, queries, heads, B2 reads, or physical-index qualification.
 
 ## Fixed testnet boundary

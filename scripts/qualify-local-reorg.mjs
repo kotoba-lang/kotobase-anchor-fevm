@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import {ContractFactory, JsonRpcProvider, Wallet} from "ethers";
 import {DurableAnchorJournal} from "../runtime/journal-store.mjs";
-import {FevmRpcInterpreter} from "../runtime/rpc-interpreter.mjs";
+import {EvmRpcInterpreter} from "../runtime/evm-interpreter.mjs";
 
 const ANVIL_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const revision = execFileSync("git", ["rev-parse", "HEAD"], {encoding: "utf8"}).trim();
@@ -44,7 +44,7 @@ try {
   await contract.waitForDeployment();
   const snapshot = await rpc("evm_snapshot");
   const salt = `0x${crypto.randomBytes(32).toString("hex")}`;
-  const interpreter = new FevmRpcInterpreter({provider, signer,
+  const interpreter = new EvmRpcInterpreter({provider, signer,
     contractAddress: await contract.getAddress(), disclosureSalt: salt, minConfirmations: 3});
   const effect = {"effect/type": "fevm/submit-checkpoint", idempotency_key: "reorg-drill",
     payload: {"payload/version": 1, "database-id": "private/reorg-drill", epoch: 1,
@@ -73,7 +73,7 @@ try {
     throw new Error(`replacement receipt did not finalize: ${JSON.stringify({reincluded, finalized,
       head: await provider.getBlockNumber()})}`);
 
-  const evidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), "kotobase-fevm-reorg-"));
+  const evidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), "kotobase-evm-reorg-"));
   fs.chmodSync(evidenceDir, 0o700);
   const journalPath = path.join(evidenceDir, "reorg.jsonl");
   const journal = new DurableAnchorJournal(journalPath);
@@ -83,7 +83,7 @@ try {
     block_hash: reincluded["block-hash"], confirmations: finalized.confirmations});
   journal.close();
   const rawSha256 = crypto.createHash("sha256").update(fs.readFileSync(journalPath)).digest("hex");
-  console.log(JSON.stringify({schema: "kotobase.fevm-local-reorg-evidence.v1",
+  console.log(JSON.stringify({schema: "kotobase.evm-local-reorg-evidence.v1",
     source_revision: revision,
     original_transaction: first["tx-hash"], replacement_transaction: second["tx-hash"],
     original_block_hash: included["block-hash"], replacement_block_hash: reincluded["block-hash"],
