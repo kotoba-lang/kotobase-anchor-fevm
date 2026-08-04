@@ -32,7 +32,8 @@
                                       {:result/type :submitted :tx-hash "tx-1"} policy)
         confirm-claim (queue/claim submitted "poller-1" 10 policy)
         confirmed (queue/apply-result confirm-claim "poller-1" 10
-                                      {:result/type :confirmed :height 42} policy)
+                                      {:result/type :confirmed :height 42
+                                       :block-hash "block-a"} policy)
         final-claim (queue/claim confirmed "poller-2" 20 policy)
         finalized (queue/apply-result final-claim "poller-2" 20
                                       {:result/type :finalized :confirmations 900} policy)]

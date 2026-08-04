@@ -24,7 +24,7 @@
 (deftest evidence-drives-finality
   (let [pending (:state (fevm/submission-plan checkpoint config))
         submitted (fevm/mark-submitted pending {:tx-hash "bafy-message"})
-        confirmed (fevm/mark-confirmed submitted {:height 1234})
+        confirmed (fevm/mark-confirmed submitted {:height 1234 :block-hash "block-a"})
         finalized (fevm/mark-finalized confirmed {:confirmations 900})]
     (is (= :finalized (:status finalized)))
     (is (= "bafy-message" (:tx-hash finalized)))))
