@@ -3,7 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import {generateTransparencyIdentity, SignedTransparencyAnchor} from "../transparency-anchor.mjs";
+import {generateTransparencyIdentity, SignedTransparencyAnchor,
+  verifyTransparencyLog} from "../transparency-anchor.mjs";
 
 const salt = `0x${"12".repeat(32)}`;
 const effect = {"effect/type": "checkpoint/append", idempotency_key: "job-1",
@@ -12,7 +13,7 @@ const effect = {"effect/type": "checkpoint/append", idempotency_key: "job-1",
 test("signed transparency receipts are durable, chained and idempotent", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "checkpoint-transparency-"));
   const file = path.join(dir, "receipts.jsonl");
-  const {privateKey} = generateTransparencyIdentity();
+  const {privateKey, publicKey} = generateTransparencyIdentity();
   let anchor = new SignedTransparencyAnchor({file, privateKey, disclosureSalt: salt,
     clock: () => "2026-08-04T00:00:00.000Z"});
   const first = anchor.append(effect);
@@ -26,6 +27,8 @@ test("signed transparency receipts are durable, chained and idempotent", () => {
   assert.equal(JSON.stringify(first.receipt).includes("private/db"), false);
   assert.equal(JSON.stringify(first.receipt).includes("private/root"), false);
   anchor.close();
+  assert.equal(verifyTransparencyLog({file, publicKey}).length, 2,
+    "witness verification must require only the public key");
   anchor = new SignedTransparencyAnchor({file, privateKey, disclosureSalt: salt});
   assert.equal(anchor.receipts.length, 2);
   assert.equal(fs.statSync(file).mode & 0o777, 0o600);

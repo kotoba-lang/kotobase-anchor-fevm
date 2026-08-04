@@ -4,6 +4,31 @@ import {canonical, privateCheckpointMaterial} from "./checkpoint-material.mjs";
 
 const sha256 = value => crypto.createHash("sha256").update(value).digest("hex");
 
+export function verifyTransparencyLog({file, publicKey}) {
+  const verifier = publicKey?.type === "public" ? publicKey : crypto.createPublicKey(publicKey);
+  const publicKeyDer = verifier.export({type: "spki", format: "der"}).toString("base64");
+  const receipts = [];
+  const byIdempotencyKey = new Map();
+  for (const [index, line] of fs.readFileSync(file, "utf8").split("\n").entries()) {
+    if (!line) continue;
+    let receipt;
+    try { receipt = JSON.parse(line); } catch { throw new Error(`invalid transparency JSON at line ${index + 1}`); }
+    const {receipt_sha256: recordedHash, signature, ...unsigned} = receipt;
+    const expectedPrevious = receipts.at(-1)?.receipt_sha256 ?? null;
+    if (receipt.sequence !== receipts.length + 1 || receipt.previous_receipt_sha256 !== expectedPrevious ||
+        receipt.signer_public_key !== publicKeyDer ||
+        !crypto.verify(null, Buffer.from(canonical(unsigned)), verifier, Buffer.from(signature, "base64")) ||
+        recordedHash !== sha256(canonical({...unsigned, signature})))
+      throw new Error(`transparency receipt verification failed at line ${index + 1}`);
+    const existing = byIdempotencyKey.get(receipt.idempotency_key);
+    if (existing && existing.checkpoint_digest !== receipt.checkpoint_digest)
+      throw new Error(`transparency idempotency conflict at line ${index + 1}`);
+    receipts.push(receipt);
+    byIdempotencyKey.set(receipt.idempotency_key, receipt);
+  }
+  return receipts;
+}
+
 export class SignedTransparencyAnchor {
   constructor({file, privateKey, disclosureSalt, clock = () => new Date().toISOString()}) {
     if (!file || !privateKey) throw new Error("transparency anchor requires file and signing key");
@@ -22,20 +47,7 @@ export class SignedTransparencyAnchor {
   }
 
   #replay() {
-    for (const [index, line] of fs.readFileSync(this.file, "utf8").split("\n").entries()) {
-      if (!line) continue;
-      let receipt;
-      try { receipt = JSON.parse(line); } catch { throw new Error(`invalid transparency JSON at line ${index + 1}`); }
-      const {receipt_sha256: recordedHash, signature, ...unsigned} = receipt;
-      const expectedPrevious = this.receipts.at(-1)?.receipt_sha256 ?? null;
-      if (receipt.sequence !== this.receipts.length + 1 || receipt.previous_receipt_sha256 !== expectedPrevious ||
-          receipt.signer_public_key !== this.publicKeyDer ||
-          !crypto.verify(null, Buffer.from(canonical(unsigned)), this.publicKey, Buffer.from(signature, "base64")) ||
-          recordedHash !== sha256(canonical({...unsigned, signature})))
-        throw new Error(`transparency receipt verification failed at line ${index + 1}`);
-      const existing = this.byIdempotencyKey.get(receipt.idempotency_key);
-      if (existing && existing.checkpoint_digest !== receipt.checkpoint_digest)
-        throw new Error(`transparency idempotency conflict at line ${index + 1}`);
+    for (const receipt of verifyTransparencyLog({file: this.file, publicKey: this.publicKey})) {
       this.receipts.push(receipt);
       this.byIdempotencyKey.set(receipt.idempotency_key, receipt);
     }
