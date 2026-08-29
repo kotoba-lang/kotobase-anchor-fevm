@@ -15,7 +15,6 @@
     "qualify:calibration:keychain": "node scripts/run-calibration-with-keychain.mjs qualify"
   },
   "dependencies": {
-    "@noble/hashes": "2.2.0",
     "ethers": "6.17.0"
   },
   "devDependencies": {
