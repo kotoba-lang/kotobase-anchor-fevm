@@ -5,7 +5,7 @@
   the compare-and-set effect from `persist-plan`, and executes `work-effect`
   only after the claim CAS succeeds. This keeps FEVM, clocks, queues and
   durable stores outside the graph transaction path."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [kotobase.anchor.fevm :as fevm]))
 
 (def job-version 1)

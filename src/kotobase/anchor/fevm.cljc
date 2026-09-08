@@ -1,6 +1,6 @@
 (ns kotobase.anchor.fevm
   "Pure plans and lifecycle evidence for FEVM checkpoint anchoring."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [kotobase.engine.archive :as lifecycle]
             [kotobase.engine.canonical :as canonical]))
 
