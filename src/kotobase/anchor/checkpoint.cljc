@@ -1,7 +1,7 @@
 (ns kotobase.anchor.checkpoint
   "Chain-neutral checkpoint anchor plans. Network adapters consume effects;
   graph transactions never wait for them."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [kotobase.engine.archive :as lifecycle]
             [kotobase.engine.canonical :as canonical]))
 
