@@ -28,8 +28,8 @@ provider, or query dependency. Losing every anchor backend must not make the
 graph database unavailable.
 
 ```sh
-clojure -M:test
-clojure -M:lint
+kbb -M:test
+kbb -M:lint
 npm ci
 npm run test:cljs
 npm run test:runtime

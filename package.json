@@ -2,7 +2,7 @@
   "name": "kotobase-checkpoint-anchor-runtime",
   "private": true,
   "scripts": {
-    "test:cljs": "nbb --classpath \"$(clojure -Spath)\" test/run.cljk",
+    "test:cljs": "kbb --backend sci --classpath \"$(kbb -Spath)\" test/run.cljk",
     "test:runtime": "node --test runtime/test/*.test.mjs",
     "test:contract": "forge test",
     "build:contract": "forge build",
