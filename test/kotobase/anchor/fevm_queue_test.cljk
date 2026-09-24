@@ -1,5 +1,5 @@
 (ns kotobase.anchor.fevm-queue-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [kotobase.anchor.fevm.queue :as queue]))
 
 (def checkpoint
